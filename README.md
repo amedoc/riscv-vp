@@ -1,6 +1,7 @@
 # RISC-V based Virtual Prototype (VP)
 
 ### Key features of our VP:
+ - Adding analog accelerator (RRAM) support
 
  - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
  - Implemented in SystemC TLM-2.0
