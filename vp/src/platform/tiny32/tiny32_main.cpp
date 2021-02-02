@@ -13,10 +13,17 @@
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
 
+
+//////////////////////////////////////////////////////////////////////
+//-------------------------RRAM header file---------------------------
+#include "platform/common/rram.h"
+//////////////////////////////////////////////////////////////////////
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
+
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -33,6 +40,12 @@ public:
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
+
+//////////////////////////////////////////////////////////////////////
+//-------------------RRAM address in the memory map--------------------
+		addr_t rram_start_addr = 0x03000000;
+		addr_t rram_end_addr = 0x30001FF;
+//////////////////////////////////////////////////////////////////////
 
 	bool quiet = false;
 	bool use_E_base_isa = false;
@@ -71,6 +84,11 @@ int sc_main(int argc, char **argv) {
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
+//////////////////////////////////////////////////////////////////////
+//-------------------------RRAM instantiation-------------------------
+	rram rram_mem("rram");
+//////////////////////////////////////////////////////////////////////
+
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
 
@@ -87,8 +105,35 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
+
+//////////////////////////////////////////////////////////////////////
+	//-------------------------RRAM initialization--------------------------
+
+	std::cout << "@" << sc_time_stamp() <<"initializing the RRAM \n" << endl;
+	uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map
+	bzero(rram_start,512); // bzero function copies n=512 bytes, each with a value of zero
+
+
+	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
+
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+	//----------------loading values into RRAM manually------------------
+
+	std::cout << "@" << sc_time_stamp() <<"loading values into RRAM \n" << endl;
+	for (uint8_t i=0;i<=512;i++)
+	{
+	*(rram_mem.rram_data + i) = 0x0055;
+	std::cout << "@" << sc_time_stamp() <<"value of "<<i<< " cell ="<< *(rram_mem.rram_data + i)<< "\n" << endl;
+
+	}
+
+//////////////////////////////////////////////////////////////////////
+
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
+
 
 	if (opt.intercept_syscalls)
 		core.sys = &sys;
@@ -98,12 +143,23 @@ int sc_main(int argc, char **argv) {
 	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 
+//////////////////////////////////////////////////////////////////////
+	//-------------------------RRAM port mapping--------------------------
+	bus.ports[3] = new PortMapping(opt.rram_start_addr, opt.rram_end_addr);
+//////////////////////////////////////////////////////////////////////
+
 	// connect TLM sockets
 	core_mem_if.isock.bind(bus.tsocks[0]);
 	dbg_if.isock.bind(bus.tsocks[1]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(sys.tsock);
+
+//////////////////////////////////////////////////////////////////////
+	//--------------------RRAM connecting TLM sockets---------------------
+	bus.isocks[3].bind(rram_mem.tsock);
+
+//////////////////////////////////////////////////////////////////////
 
 	// connect interrupt signals/communication
 	clint.target_harts[0] = &core;
