@@ -14,7 +14,7 @@ using namespace std;
 
 
 
-#define DATA_WIDTH        16    				// Data space in a cell
+#define D ATA_WIDTH        16    				// Data space in a cell
 #define ADDR_WIDTH        8     				// 2^8 = 256 --> rram can store 256  cells == 256*16 == 4096 bits
                                 				// data space in the chip = 4 kbits
 
@@ -28,7 +28,7 @@ struct rram : public sc_core::sc_module
 
   //-----------Internal variables-------------------
   uint16_t (*rram_data)= new uint16_t[256];		// array[256] of 16 bits cells, inner data of the RRAM
-  //uint32_t m_size = 256 ;
+  uint32_t m_size = 0x000001FF;     //256 ;
 
 
 
@@ -44,12 +44,13 @@ struct rram : public sc_core::sc_module
   {
 	  std::cout << "@" << sc_time_stamp() <<" Start copying data from bus to the RRAM (Write operation) " << endl; // logging message
 
-	  //assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
+	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
 
-	  //memcpy(rram_data,src+addr,num_bytes);
+	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" address = " << addr << endl; // logging message
+
 	  //copying data from the memory array where the starting address of RRAM is assigned
-
-		memcpy(rram_data + addr, src, num_bytes);
+	  memcpy(rram_data + addr, src, num_bytes);
+	  //memcpy(rram_data,src+addr,num_bytes);
 
 	 std::cout << "@" << sc_time_stamp() <<" Copying data from BUS to RRAM (Write operation) is finished " << endl; // logging message
   }
@@ -59,14 +60,14 @@ struct rram : public sc_core::sc_module
   void  read_data(unsigned addr, uint8_t* dst, unsigned num_bytes)
   {
 	  std::cout << "@" << sc_time_stamp() <<" Start copying data from RRAM to the bus (Read operation)" << endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" address = " << addr << endl; // logging message
+	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
 
-	  //assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
+	 // multiply_data();
 
-	  multiply_data();
 
-	  //memcpy(dst+addr,rram_data,num_bytes);
 	  memcpy(dst, rram_data + addr, num_bytes);
-
+	  //memcpy(dst+addr,rram_data,num_bytes); //stack smasing detected
 	  std::cout << "@" << sc_time_stamp() <<" Copying data from RRAM to the bus (Read operation) is finished" << endl; // logging message
   }
 

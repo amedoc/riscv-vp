@@ -107,15 +107,15 @@ int sc_main(int argc, char **argv) {
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
 
 //////////////////////////////////////////////////////////////////////
-	//-------------------------RRAM initialization--------------------------
+//-------------------------RRAM initialization------------------------
+//------------------ No TLM transactions involved -------------------
+/*
 
-	//std::cout << "@" << sc_time_stamp() <<"initializing the RRAM \n" << endl;
-	//uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map
-	//bzero(rram_start,512); // bzero function copies n=512 bytes, each with a value of zero
-
-
-	//std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
-
+	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
+	//uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map  // infifnite loop ????
+	memset(rram_mem.rram_data,0,256);
+	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM finished \n" << endl;
+*/
 //////////////////////////////////////////////////////////////////////
 
 
@@ -175,7 +175,8 @@ int sc_main(int argc, char **argv) {
 
 //////////////////////////////////////////////////////////////////////
 //----------------loading values into RRAM manually------------------
-
+//------------------ No TLM transactions involved -------------------
+/*
 	std::cout << "@" << sc_time_stamp() <<" loading values into RRAM " << endl;
 	for (uint32_t i=0;i<=255;i++)
 	{
@@ -190,7 +191,7 @@ int sc_main(int argc, char **argv) {
 	//std::cout << "@" << sc_time_stamp() <<" value of "<<5<< " cell ="<< *(rram_mem.rram_data + 5)<< "\n" << endl;
 	//std::cout << "@" << sc_time_stamp() <<" value of "<<5<< " cell ="<< *(rram_mem.rram_data + 6)<< "\n" << endl;
 	//std::cout << "@" << sc_time_stamp() <<" value of "<<1<< " cell ="<< *(rram_mem.rram_data + 1)<< "\n" << endl;
-
+*/
 //////////////////////////////////////////////////////////////////////
 
 	if (!opt.quiet) {
