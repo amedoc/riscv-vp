@@ -79,7 +79,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 3> bus("SimpleBus");
+	SimpleBus<2, 4> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -109,27 +109,16 @@ int sc_main(int argc, char **argv) {
 //////////////////////////////////////////////////////////////////////
 	//-------------------------RRAM initialization--------------------------
 
-	std::cout << "@" << sc_time_stamp() <<"initializing the RRAM \n" << endl;
-	uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map
-	bzero(rram_start,512); // bzero function copies n=512 bytes, each with a value of zero
+	//std::cout << "@" << sc_time_stamp() <<"initializing the RRAM \n" << endl;
+	//uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map
+	//bzero(rram_start,512); // bzero function copies n=512 bytes, each with a value of zero
 
 
-	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
-
-//////////////////////////////////////////////////////////////////////
+	//std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
 
 //////////////////////////////////////////////////////////////////////
-	//----------------loading values into RRAM manually------------------
 
-	std::cout << "@" << sc_time_stamp() <<"loading values into RRAM \n" << endl;
-	for (uint8_t i=0;i<=512;i++)
-	{
-	*(rram_mem.rram_data + i) = 0x0055;
-	std::cout << "@" << sc_time_stamp() <<"value of "<<i<< " cell ="<< *(rram_mem.rram_data + i)<< "\n" << endl;
 
-	}
-
-//////////////////////////////////////////////////////////////////////
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
@@ -180,7 +169,30 @@ int sc_main(int argc, char **argv) {
 	if (opt.quiet)
 		 sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 
+
+
 	sc_core::sc_start();
+
+//////////////////////////////////////////////////////////////////////
+//----------------loading values into RRAM manually------------------
+
+	std::cout << "@" << sc_time_stamp() <<" loading values into RRAM " << endl;
+	for (uint32_t i=0;i<=255;i++)
+	{
+	*(rram_mem.rram_data + i) = 0xFFFF;
+	std::cout << "@" << sc_time_stamp() <<" value of "<<(uint32_t)i<< " cell ="<<(uint16_t)*(rram_mem.rram_data + i)<< "\n" << endl;
+	}
+	rram_mem.multiply_data();
+	std::cout << "@" << sc_time_stamp() <<" value of "<<(uint32_t)4<< " cell ="<<(uint16_t)*(rram_mem.rram_data + 4)<< "\n" << endl;
+	std::cout << "@" << sc_time_stamp() <<" value of "<<(uint32_t)5<< " cell ="<<(uint16_t)*(rram_mem.rram_data + 5)<< "\n" << endl;
+	//*(rram_mem.rram_data + 5) = 0x0055;
+	//*(rram_mem.rram_data + 6) = 0x0001;
+	//std::cout << "@" << sc_time_stamp() <<" value of "<<5<< " cell ="<< *(rram_mem.rram_data + 5)<< "\n" << endl;
+	//std::cout << "@" << sc_time_stamp() <<" value of "<<5<< " cell ="<< *(rram_mem.rram_data + 6)<< "\n" << endl;
+	//std::cout << "@" << sc_time_stamp() <<" value of "<<1<< " cell ="<< *(rram_mem.rram_data + 1)<< "\n" << endl;
+
+//////////////////////////////////////////////////////////////////////
+
 	if (!opt.quiet) {
 		core.show();
 	}
