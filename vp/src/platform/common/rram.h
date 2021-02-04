@@ -28,7 +28,7 @@ struct rram : public sc_core::sc_module
 
   //-----------Internal variables-------------------
   uint16_t (*rram_data)= new uint16_t[256];		// array[256] of 16 bits cells, inner data of the RRAM
-  uint32_t m_size = 0x000001FF;     //256 ;
+  uint32_t m_size = 0x00000200;     //512x8= 256x16 ;
 
 
 
@@ -46,10 +46,17 @@ struct rram : public sc_core::sc_module
 
 	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
 
-	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" address = " << addr << endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" start address = " << addr << " rram cell address = " << rram_data <<endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" data pointer value =" << (uint32_t)*src <<endl; // logging message
 
 	  //copying data from the memory array where the starting address of RRAM is assigned
-	  memcpy(rram_data + addr, src, num_bytes);
+	  memcpy(rram_data + addr/2, src, num_bytes);
+
+	  std::cout << "@" << sc_time_stamp() <<" rram cell 0 value  =" << (uint16_t)*(rram_data+0) <<endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" rram cell 255 value  =" << (uint16_t)*(rram_data+255) <<endl; // logging message
+
+
+
 	  //memcpy(rram_data,src+addr,num_bytes);
 
 	 std::cout << "@" << sc_time_stamp() <<" Copying data from BUS to RRAM (Write operation) is finished " << endl; // logging message
@@ -60,13 +67,22 @@ struct rram : public sc_core::sc_module
   void  read_data(unsigned addr, uint8_t* dst, unsigned num_bytes)
   {
 	  std::cout << "@" << sc_time_stamp() <<" Start copying data from RRAM to the bus (Read operation)" << endl; // logging message
-	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" address = " << addr << endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" start address = " << addr << endl; // logging message
+
 	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
 
-	 // multiply_data();
+
+	 memcpy(dst, rram_data + addr/2, num_bytes); // 4 bytes from the RRAM (first two cells) will be written in the bus
 
 
-	  memcpy(dst, rram_data + addr, num_bytes);
+
+	  std::cout << "@" << sc_time_stamp() <<" rram cell 0 value  =" << (uint16_t)*(rram_data+0) <<endl; // logging message
+	  std::cout << "@" << sc_time_stamp() <<" rram cell 255 value  =" << (uint16_t)*(rram_data+255) <<endl; // logging message
+
+
+
+
+
 	  //memcpy(dst+addr,rram_data,num_bytes); //stack smasing detected
 	  std::cout << "@" << sc_time_stamp() <<" Copying data from RRAM to the bus (Read operation) is finished" << endl; // logging message
   }
@@ -107,6 +123,16 @@ struct rram : public sc_core::sc_module
       return result;
   }
 
+  void multiply_two(unsigned addr)
+    {
+
+	  	  	  uint32_t tmp = 0x00000000 ;
+	          tmp = multiply_two_cells( *(rram_data +addr/2) , *(rram_data + (addr/2)+1) );
+	          *(rram_data +addr/2) = tmp & 0xFFFF;
+	          *(rram_data + (addr/2)+1) = tmp >> 16;
+
+    }
+
 
 
   // Multiply operation of each adjacent two cells of the RRAM
@@ -115,7 +141,7 @@ struct rram : public sc_core::sc_module
   //then slice it to store it in the  adjacent cells
   {
 	  std::cout << "@" << sc_time_stamp() <<" Start of inner cells multiplication" << endl; // logging message
-      for(int i=0;i<255;i=i+2)
+      for(int i=0;i<256;i=i+2)
       {
       	uint32_t tmp = 0x00000000 ;
         tmp = multiply_two_cells( *(rram_data + i) , *(rram_data + (i+1)) );
@@ -142,8 +168,11 @@ struct rram : public sc_core::sc_module
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 			write_data(addr,ptr,len);
+
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
+			multiply_two(addr);
 			read_data(addr,ptr,len);
+
 		} else {
 			sc_assert(false && "unsupported tlm command");
 		}

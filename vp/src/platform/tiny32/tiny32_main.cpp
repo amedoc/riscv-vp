@@ -44,7 +44,8 @@ public:
 //////////////////////////////////////////////////////////////////////
 //-------------------RRAM address in the memory map--------------------
 		addr_t rram_start_addr = 0x03000000;
-		addr_t rram_end_addr = 0x30001FF;
+		addr_t rram_end_addr = 0x30001FF; // = rram_start_addr + mem_size -1
+		// rram_size = 256x16 bits = 512 B = 0x00000200
 //////////////////////////////////////////////////////////////////////
 
 	bool quiet = false;

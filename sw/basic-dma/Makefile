@@ -1,5 +1,7 @@
+compiler = /home/ahmed/Desktop/Work_Productive_4.0/riscv-gnu-toolchain32/bin
+
 all : main.c irq.c irq.h bootstrap.S
-	riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -o main -march=rv32ima -mabi=ilp32 -nostartfiles -Wl,--no-relax
+	$(compiler)/riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -o dma -march=rv32g -mabi=ilp32d -nostartfiles -Wl,--no-relax
 	
 sim: all
 	riscv-vp --intercept-syscalls main
