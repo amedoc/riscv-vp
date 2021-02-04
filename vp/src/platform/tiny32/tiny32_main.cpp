@@ -43,9 +43,9 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 //-------------------RRAM address in the memory map--------------------
-		addr_t rram_start_addr = 0x03000000;
-		addr_t rram_end_addr = 0x30001FF; // = rram_start_addr + mem_size -1
-		// rram_size = 256x16 bits = 512 B = 0x00000200
+	addr_t rram_start_addr = 0x03000000;
+	addr_t rram_end_addr = 0x30001FF; // = rram_start_addr + rram_size -1
+	// rram_size = 256x16 bits = 512 Bytes = 0x00000200
 //////////////////////////////////////////////////////////////////////
 
 	bool quiet = false;
@@ -106,21 +106,6 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
-
-//////////////////////////////////////////////////////////////////////
-//-------------------------RRAM initialization------------------------
-//------------------ No TLM transactions involved -------------------
-/*
-
-	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM \n" << endl;
-	//uint32_t* rram_start = (uint32_t*)0x3000000; // the rram start memory in the memory map  // infifnite loop ????
-	memset(rram_mem.rram_data,0,256);
-	std::cout << "@" << sc_time_stamp() <<" initializing the RRAM finished \n" << endl;
-*/
-//////////////////////////////////////////////////////////////////////
-
-
-
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 

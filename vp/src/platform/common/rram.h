@@ -14,21 +14,16 @@ using namespace std;
 
 
 
-#define D ATA_WIDTH        16    				// Data space in a cell
-#define ADDR_WIDTH        8     				// 2^8 = 256 --> rram can store 256  cells == 256*16 == 4096 bits
-                                				// data space in the chip = 4 kbits
-
-
 struct rram : public sc_core::sc_module
 {
 
-	tlm_utils::simple_target_socket<rram> tsock; // Declaring a socket/port for he rram
+	tlm_utils::simple_target_socket<rram> tsock; // Declaring a socket for he rram
 
 
 
   //-----------Internal variables-------------------
   uint16_t (*rram_data)= new uint16_t[256];		// array[256] of 16 bits cells, inner data of the RRAM
-  uint32_t m_size = 0x00000200;     //512x8= 256x16 ;
+  uint32_t m_size = 0x00000200;     			//512x8= 256x16 ;
 
 
 
@@ -38,67 +33,37 @@ struct rram : public sc_core::sc_module
   //-----------Methods------------------------------
 
 
-  //The target (RRAM) should copy data FROM the data array in the bus
-  //Writing data in the RRAM
+//The target (RRAM) should copy data FROM the data array in the bus
+//Writing data in the RRAM
   void  write_data (unsigned addr,const uint8_t *src, unsigned num_bytes)
   {
-	  std::cout << "@" << sc_time_stamp() <<" Start copying data from bus to the RRAM (Write operation) " << endl; // logging message
-
-	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
-
-	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" start address = " << addr << " rram cell address = " << rram_data <<endl; // logging message
-	  std::cout << "@" << sc_time_stamp() <<" data pointer value =" << (uint32_t)*src <<endl; // logging message
+	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater than rram size
 
 	  //copying data from the memory array where the starting address of RRAM is assigned
-	  memcpy(rram_data + addr/2, src, num_bytes);
+	  memcpy(rram_data + addr/2, src, num_bytes); //4 bytes from the bus  will be written in the RRAM (first two cells)
+	  	  	  	  	  	  	  	  	  	  	  	  // addr = i*4
 
-	  std::cout << "@" << sc_time_stamp() <<" rram cell 0 value  =" << (uint16_t)*(rram_data+0) <<endl; // logging message
-	  std::cout << "@" << sc_time_stamp() <<" rram cell 255 value  =" << (uint16_t)*(rram_data+255) <<endl; // logging message
-
-
-
-	  //memcpy(rram_data,src+addr,num_bytes);
-
-	 std::cout << "@" << sc_time_stamp() <<" Copying data from BUS to RRAM (Write operation) is finished " << endl; // logging message
   }
 
 //the target (RRAM) should copy data TO the data array in the bus
 // reading from RRAM and writing to the bus
   void  read_data(unsigned addr, uint8_t* dst, unsigned num_bytes)
   {
-	  std::cout << "@" << sc_time_stamp() <<" Start copying data from RRAM to the bus (Read operation)" << endl; // logging message
-	  std::cout << "@" << sc_time_stamp() <<" num_bytes =" << num_bytes<<" start address = " << addr << endl; // logging message
-
-	  assert(addr + num_bytes <= m_size); // to test if data sent is not greater to rram size
-
-
+	 assert(addr + num_bytes <= m_size); // to test if data sent is not greater than rram size
 	 memcpy(dst, rram_data + addr/2, num_bytes); // 4 bytes from the RRAM (first two cells) will be written in the bus
-
-
-
-	  std::cout << "@" << sc_time_stamp() <<" rram cell 0 value  =" << (uint16_t)*(rram_data+0) <<endl; // logging message
-	  std::cout << "@" << sc_time_stamp() <<" rram cell 255 value  =" << (uint16_t)*(rram_data+255) <<endl; // logging message
-
-
-
-
-
-	  //memcpy(dst+addr,rram_data,num_bytes); //stack smasing detected
-	  std::cout << "@" << sc_time_stamp() <<" Copying data from RRAM to the bus (Read operation) is finished" << endl; // logging message
+	 	 	 	 	 	 	 	 	 	 	 	 // addr = i*4
   }
 
 
-  // Reset the internal data of the RRAM
+// Reset the internal data of the RRAM
   void  reset_data ()
   {
-	  std::cout << "@"<< sc_time_stamp() <<" Start setting all inner cells to null" << endl; //logging message
 	  uint16_t null_cell = 0x0000;
 
 	  for(int i=0;i<256;i++)
 	  {
 		  *(rram_data+i) = null_cell;
 	  }
-	  std::cout << "@" << sc_time_stamp() <<" Finish setting all inner cells to null" << endl; //logging message
   }
 
   // Multiplication algorithm via shifting and addition
@@ -123,33 +88,21 @@ struct rram : public sc_core::sc_module
       return result;
   }
 
-  void multiply_two(unsigned addr)
+  // Multiply operation of each adjacent two cells of the RRAM
+  void multiply_data(unsigned addr)
     {
+	  // we will use a temporary array to store the multiplication result
+	  //then slice it to store it in the  adjacent cells
 
-	  	  	  uint32_t tmp = 0x00000000 ;
-	          tmp = multiply_two_cells( *(rram_data +addr/2) , *(rram_data + (addr/2)+1) );
-	          *(rram_data +addr/2) = tmp & 0xFFFF;
-	          *(rram_data + (addr/2)+1) = tmp >> 16;
+	  	  uint32_t tmp = 0x00000000 ;
+	      tmp = multiply_two_cells( *(rram_data +addr/2) , *(rram_data + (addr/2)+1) );
+	      *(rram_data +addr/2) = tmp & 0xFFFF;
+	      *(rram_data + (addr/2)+1) = tmp >> 16;
 
     }
 
 
 
-  // Multiply operation of each adjacent two cells of the RRAM
-  void  multiply_data()
-  // we will use a temporary array to store the multiplication result
-  //then slice it to store it in the  adjacent cells
-  {
-	  std::cout << "@" << sc_time_stamp() <<" Start of inner cells multiplication" << endl; // logging message
-      for(int i=0;i<256;i=i+2)
-      {
-      	uint32_t tmp = 0x00000000 ;
-        tmp = multiply_two_cells( *(rram_data + i) , *(rram_data + (i+1)) );
-        *(rram_data + i) = tmp & 0xFFFF;
-        *(rram_data + (i+1)) = tmp >> 16;
-      }
-      std::cout << "@" << sc_time_stamp() <<" Multiplication is finished" << endl; // logging message
-  }
 
   // Transport function used to pass payload to other systemC modules with a delay
   void transport(tlm::tlm_generic_payload &trans , sc_core::sc_time &delay)
@@ -170,7 +123,7 @@ struct rram : public sc_core::sc_module
 			write_data(addr,ptr,len);
 
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
-			multiply_two(addr);
+			multiply_data(addr);
 			read_data(addr,ptr,len);
 
 		} else {
@@ -199,22 +152,11 @@ struct rram : public sc_core::sc_module
 
 
 //////////////////////////////////////////////////////////////////////
-//-----------------------RISC-V VP memory map-------------------------
-
-//addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT
-
-//addr_t mem_start_addr = 0x00000000;
-//addr_t mem_end_addr = mem_start_addr + mem_size - 1;
-//addr_t clint_start_addr = 0x02000000;
-//addr_t clint_end_addr = 0x0200ffff;
-//addr_t sys_start_addr = 0x02010000;
-//addr_t sys_end_addr = 0x020103ff;
-
 //-----------RRAM address in the memory map of risc-v vp-------------
 
-// OFFset = 0x00FF as mem_size = 4kbits = 256 * 16 = 2^8 * 16
+//OFFSET = 0x01FF as mem_size = 4kbits = 256 * 16 = 2^9 * 8
 //addr_t rram_start_addr = 0x03000000;
-//addr_t rram_end_addr = mem_start_addr + OFFset = 0x30000FF;
+//addr_t rram_end_addr = mem_start_addr + OFFSET = 0x30001FF;
 
 ///////////////////////////////////////////////////////////////////////
 
